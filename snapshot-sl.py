@@ -35,10 +35,25 @@ def cleaning_process(artist_data):
 
 # Start of Dashboard Design
 
-menu = st.sidebar.radio(
-    'Dashboard',
-    options = ['Home', 'Streams', 'Earnings', 'Marketing']
-)
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
+
+with st.sidebar:
+    st.title("🎯 Dashboard")
+    home_button = st.button("🏠 Home")
+    streams_button = st.button("🎵 Streams")
+    earnings_button = st.button("💲 Earnings")
+    marketing_button = st.button('📣 Marketing')
+    
+    if home_button:
+        st.session_state.current_page = "Home"
+    if streams_button:
+        st.session_state.current_page = "Streams"
+    if earnings_button:
+        st.session_state.current_page = "Earnings"
+    if marketing_button:
+        st.session_state.current_page = "Marketing"
+
 
 if uploaded_file:
     # Data processing input
@@ -49,7 +64,7 @@ if uploaded_file:
     cad = cleaning_process(raw_data)
 
     # Home menu design
-    if menu == 'Home':
+    if st.session_state.current_page == 'Home':
         st.title('At a glance...')
         c1, c2 = st.columns(2)
         
@@ -93,11 +108,18 @@ if uploaded_file:
             include_us = st.checkbox('Include US Data', value = False)
             if not include_us:
                 country_streams_exu = country_streams_exu[country_streams_exu['Country'] != 'United States']
+            
+            mint_green_scale = [
+                (0.0, '#d9fae3'),
+                (0.3, '#cffcdd'),
+                (0.6, '#bbfacf'),
+                (1.0, '#a8f0a8')
+            ]
+            
             fig = px.choropleth(
                         country_streams_exu, locations = 'Country', locationmode = 'country names', 
                         color = 'Quantity',
-                        color_continuous_scale= 'gray',
-                        range_color = (0, country_streams_exu['Quantity'].max())
+                        color_continuous_scale = mint_green_scale
             )
 
             fig.update_layout(
@@ -113,7 +135,15 @@ if uploaded_file:
             unknown_streams = country_streams[country_streams['Country'] == 'Unknown']['Quantity'].sum()
 
             st.plotly_chart(fig, use_container_width=True)
-            
+
+    elif st.session_state.current_page == 'Streams':
+        st.title('Streaming Metrics')
+
+    elif st.session_state.current_page == 'Earnings':
+        st.title('Earnings Metrics')
+    
+    elif st.session_state.current_page == 'Marketing':
+        st.title('Marketing Strategies')        
 
 else:
     st.info('Please upload your data to begin.')
