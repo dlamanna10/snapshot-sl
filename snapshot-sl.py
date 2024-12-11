@@ -3,9 +3,7 @@ import streamlit as st
 import pycountry
 import plotly.express as px
 
-st.set_page_config(page_title = 'Snapshot', page_icon = '📊', layout = 'wide')
-# Upload DistroKid CSV (try and find way to convert from tsv to csv for them)
-uploaded_file = st.file_uploader('Upload your DistroKid data here (convert to csv)', type=['csv'])
+st.set_page_config(page_title='Snapshot', page_icon='📊', layout='wide')
 
 def cleaning_process(artist_data):
     # Drop unnecessary columns
@@ -33,118 +31,127 @@ def cleaning_process(artist_data):
 
     return artist_data
 
-# Start of Dashboard Design
-
+if 'uploaded_file' not in st.session_state:
+    st.session_state['uploaded_file'] = None
+if 'cad' not in st.session_state:
+    st.session_state['cad'] = None
 if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'Home'
+    st.session_state.current_page = 'Upload'
 
 with st.sidebar:
     st.title("🎯 Dashboard")
     home_button = st.button("🏠 Home")
     streams_button = st.button("🎵 Streams")
     earnings_button = st.button("💲 Earnings")
-    marketing_button = st.button('📣 Marketing')
-    
-    if home_button:
-        st.session_state.current_page = "Home"
-    if streams_button:
-        st.session_state.current_page = "Streams"
-    if earnings_button:
-        st.session_state.current_page = "Earnings"
-    if marketing_button:
-        st.session_state.current_page = "Marketing"
+    marketing_button = st.button("📣 Marketing")
+    upload_button = st.button('Upload Data')
 
+    # Update current page based on button clicks
+    if upload_button:
+        st.session_state.current_page = 'Upload'
+    elif st.session_state.uploaded_file:
+        if home_button:
+            st.session_state.current_page = 'Home'
+        elif streams_button:
+            st.session_state.current_page = 'Streams'
+        elif earnings_button:
+            st.session_state.current_page = 'Earnings'
+        elif marketing_button:
+            st.session_state.current_page = 'Marketing'
+    else:
+        st.session_state.current_page = 'Upload'
 
-if uploaded_file:
-    # Data processing input
-    raw_data = pd.read_csv(uploaded_file)
-    if raw_data.empty:
-            st.error("The uploaded file is empty.")
-            st.stop()
-    cad = cleaning_process(raw_data)
+if st.session_state.current_page == 'Upload':
+    st.title('Data Upload')
+    st.write('Upload your DistroKid data here (convert to csv before beginning)')
 
-    # Home menu design
-    if st.session_state.current_page == 'Home':
-        st.title('At a glance...')
-        c1, c2 = st.columns(2)
-        
-        # Key metrics for home page (at a glance)
-        total_streams = cad['Quantity'].sum()
-        total_earnings = cad['Earnings'].sum()
-        avg_eps = total_earnings/total_streams
+    uploaded_file = st.file_uploader("Upload your file here", type=['csv'])
 
-        def key_metric_styling(label, value):
-            return f"""
-            <div style="padding: 5px; text-align: left; display: inline-block; width: 100%;">
-                <!-- Label styling -->
-                <div style="color: white; font-size: 32px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
-                    {label}
-                </div>
-                <!-- Value styling -->
-                <div style="align: right; background-color: white; color: black; font-size: 24px; font-weight: bold; text-align: right; padding: 5px; width: 80%;">
-                    {value}
-                </div>
-            </div>
-            """
-
-        with c1:
-            st.title('Key Metrics')
-            st.markdown(key_metric_styling('Total Streams', f"{total_streams:,}"), unsafe_allow_html=True)
-            st.markdown(key_metric_styling('Total Earnings (USD)', f"${round((total_earnings), 2):,} (USD)"), unsafe_allow_html=True)
-            st.markdown(key_metric_styling('Average Earnings/Stream', f"${round((avg_eps), 5):,} (AES)"), unsafe_allow_html=True)
-    
-        with c2:
-            # Add a radio button for the toggle
-            st.title('International Reach')
-            # Getting all countries for the graph
-            all_countries = px.data.gapminder()[['country']].drop_duplicates()
-            all_countries.columns = ['Country']
-
-            country_streams = cad.groupby('Country')['Quantity'].sum().reset_index()
-            country_streams_all = all_countries.merge(country_streams, on = 'Country', how = 'outer')
-            country_streams_all['Quantity'] = country_streams_all['Quantity'].fillna(0)
-            country_streams_exu = country_streams_all[country_streams_all['Country'] != 'Unknown']
-
-            include_us = st.checkbox('Include US Data', value = False)
-            if not include_us:
-                country_streams_exu = country_streams_exu[country_streams_exu['Country'] != 'United States']
-            
-            mint_green_scale = [
-                (0.0, '#d9fae3'),
-                (0.3, '#cffcdd'),
-                (0.6, '#bbfacf'),
-                (1.0, '#a8f0a8')
-            ]
-            
-            fig = px.choropleth(
-                        country_streams_exu, locations = 'Country', locationmode = 'country names', 
-                        color = 'Quantity',
-                        color_continuous_scale = mint_green_scale
-            )
-
-            fig.update_layout(
-                    geo=dict(
-                        bgcolor = 'black',
-                        landcolor = 'white'
-                    ),
-                    title = None, margin = dict(l = 0, r = 0, t = 0, b = 0),
-                    height = 400
-            )
-            
-            # Allocating for streams with an unknown country of sale
-            unknown_streams = country_streams[country_streams['Country'] == 'Unknown']['Quantity'].sum()
-
-            st.plotly_chart(fig, use_container_width=True)
-
-    elif st.session_state.current_page == 'Streams':
-        st.title('Streaming Metrics')
-
-    elif st.session_state.current_page == 'Earnings':
-        st.title('Earnings Metrics')
-    
-    elif st.session_state.current_page == 'Marketing':
-        st.title('Marketing Strategies')        
+    if uploaded_file is not None:
+        st.session_state['uploaded_file'] = uploaded_file
+        raw_data = pd.read_csv(uploaded_file)
+        st.session_state['cad'] = cleaning_process(raw_data)
+        st.success("File uploaded successfully! You can now navigate to other pages.")
 
 else:
-    st.info('Please upload your data to begin.')
+    if st.session_state['cad'] is None:
+        st.title('Please upload data to begin.')
+    else:
+        cad = st.session_state['cad']
+        if st.session_state.current_page == 'Home':
+            st.title('At a glance...')
+            c1, c2 = st.columns(2)
 
+            # Key metrics for home page
+            total_streams = cad['Quantity'].sum()
+            total_earnings = cad['Earnings'].sum()
+            avg_eps = total_earnings / total_streams
+
+            def key_metric_styling(label, value):
+                return f"""
+                <div style="padding: 5px; text-align: left; display: inline-block; width: 100%;">
+                    <div style="color: white; font-size: 32px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
+                        {label}
+                    </div>
+                    <div style="align: right; background-color: white; color: black; font-size: 24px; font-weight: bold; text-align: right; padding: 5px; width: 80%;">
+                        {value}
+                    </div>
+                </div>
+                """
+
+            with c1:
+                st.title('Key Metrics')
+                st.markdown(key_metric_styling('Total Streams', f"{total_streams:,}"), unsafe_allow_html=True)
+                st.markdown(key_metric_styling('Total Earnings (USD)', f"${round(total_earnings, 2):,}"), unsafe_allow_html=True)
+                st.markdown(key_metric_styling('Average Earnings/Stream', f"${round(avg_eps, 5):,}"), unsafe_allow_html=True)
+
+            with c2:
+                st.title('International Reach')
+                # Getting all countries for the graph
+                all_countries = px.data.gapminder()[['country']].drop_duplicates()
+                all_countries.columns = ['Country']
+
+                country_streams = cad.groupby('Country')['Quantity'].sum().reset_index()
+                country_streams_all = all_countries.merge(country_streams, on='Country', how='outer')
+                country_streams_all['Quantity'] = country_streams_all['Quantity'].fillna(0)
+                country_streams_exu = country_streams_all[country_streams_all['Country'] != 'Unknown']
+
+                include_us = st.checkbox('Include US Data', value=False)
+                if not include_us:
+                    country_streams_exu = country_streams_exu[country_streams_exu['Country'] != 'United States']
+
+                mint_green_scale = [
+                    (0.0, '#e3faf0'),
+                    (0.3, '#baf7dd'),
+                    (0.6, '#84f5c5'),
+                    (1.0, '#37faa9')
+                ]
+
+                fig = px.choropleth(
+                    country_streams_exu, locations='Country', locationmode='country names',
+                    color='Quantity',
+                    color_continuous_scale=mint_green_scale
+                )
+
+                fig.update_layout(
+                    geo=dict(
+                        bgcolor='black',
+                        landcolor='white'
+                    ),
+                    title=None, margin=dict(l=0, r=0, t=0, b=0),
+                    height=400
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+        elif st.session_state.current_page == 'Streams':
+            st.title('Streaming Metrics')
+            # Add content for Streams page
+
+        elif st.session_state.current_page == 'Earnings':
+            st.title('Earnings Metrics')
+            # Add content for Earnings page
+
+        elif st.session_state.current_page == 'Marketing':
+            st.title('Marketing Strategies')
+            # Add content for Marketing page
