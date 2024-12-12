@@ -80,7 +80,7 @@ else:
         cad = st.session_state['cad']
         if st.session_state.current_page == 'Home':
             st.title('At a glance...')
-            c1, c2 = st.columns(2)
+            c1, c2, c3 = st.columns([0.8, 1, 1.3])
 
             # Key metrics for home page
             total_streams = cad['Quantity'].sum()
@@ -90,59 +90,60 @@ else:
             def key_metric_styling(label, value):
                 return f"""
                 <div style="padding: 5px; text-align: left; display: inline-block; width: 100%;">
-                    <div style="color: white; font-size: 32px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
+                    <div style="color: white; font-size: 24px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
                         {label}
                     </div>
-                    <div style="align: right; background-image: linear-gradient(to left, transparent, #37faa9); color: white; font-size: 24px; font-weight: bold; text-align: right; padding: 5px; width: 80%;">
+                    <div style="align: right; background-image: linear-gradient(to left, transparent, #37faa9); color: white; 
+                        font-size: 18px; font-weight: bold; text-align: right; padding: 5px; width: 100%;">
                         {value}
                     </div>
                 </div>
                 """
-
+            
             with c1:
-                st.title('Key Metrics')
                 st.markdown(key_metric_styling('Total Streams', f"{total_streams:,}"), unsafe_allow_html=True)
+            with c2:
                 st.markdown(key_metric_styling('Total Earnings (USD)', f"${round(total_earnings, 2):,}"), unsafe_allow_html=True)
+            with c3:
                 st.markdown(key_metric_styling('Average Earnings/Stream', f"${round(avg_eps, 5):,} (AES)"), unsafe_allow_html=True)
 
-            with c2:
-                st.title('International Reach')
-                # Getting all countries for the graph
-                all_countries = px.data.gapminder()[['country']].drop_duplicates()
-                all_countries.columns = ['Country']
+            st.subheader('International Reach')
+            # Getting all countries for the graph
+            all_countries = px.data.gapminder()[['country']].drop_duplicates()
+            all_countries.columns = ['Country']
 
-                country_streams = cad.groupby('Country')['Quantity'].sum().reset_index()
-                country_streams_all = all_countries.merge(country_streams, on='Country', how='outer')
-                country_streams_all['Quantity'] = country_streams_all['Quantity'].fillna(0)
-                country_streams_exu = country_streams_all[country_streams_all['Country'] != 'Unknown']
+            country_streams = cad.groupby('Country')['Quantity'].sum().reset_index()
+            country_streams_all = all_countries.merge(country_streams, on='Country', how='outer')
+            country_streams_all['Quantity'] = country_streams_all['Quantity'].fillna(0)
+            country_streams_exu = country_streams_all[country_streams_all['Country'] != 'Unknown']
 
-                include_us = st.checkbox('Include US Data', value=False)
-                if not include_us:
-                    country_streams_exu = country_streams_exu[country_streams_exu['Country'] != 'United States']
+            include_us = st.checkbox('Include US Data', value=False)
+            if not include_us:
+                country_streams_exu = country_streams_exu[country_streams_exu['Country'] != 'United States']
 
-                mint_green_scale = [
-                    (0.0, '#e3faf0'),
-                    (0.3, '#baf7dd'),
-                    (0.6, '#84f5c5'),
-                    (1.0, '#37faa9')
-                ]
+            mint_green_scale = [
+                (0.0, '#e3faf0'),
+                (0.3, '#baf7dd'),
+                (0.6, '#84f5c5'),
+                (1.0, '#37faa9')
+            ]
 
-                fig = px.choropleth(
-                    country_streams_exu, locations='Country', locationmode='country names',
-                    color='Quantity',
-                    color_continuous_scale=mint_green_scale
-                )
+            fig = px.choropleth(
+                country_streams_exu, locations='Country', locationmode='country names',
+                color='Quantity',
+                color_continuous_scale=mint_green_scale
+            )
 
-                fig.update_layout(
-                    geo=dict(
-                        bgcolor='black',
-                        landcolor='white'
-                    ),
-                    title=None, margin=dict(l=0, r=0, t=0, b=0),
-                    height=400
-                )
+            fig.update_layout(
+                geo=dict(
+                    bgcolor='black',
+                    landcolor='white'
+                ),
+                title=None, margin=dict(l=0, r=0, t=0, b=0),
+                height=400
+            )
 
-                st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
             
             # Top 5 Section
             c1a, c2a, c3a = st.columns([2, 0.3, 2])
