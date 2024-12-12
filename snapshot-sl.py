@@ -44,7 +44,7 @@ with st.sidebar:
     streams_button = st.button("🎵 Streams")
     earnings_button = st.button("💲 Earnings")
     marketing_button = st.button("📣 Marketing")
-    upload_button = st.button('Upload Data')
+    upload_button = st.button('🗃️ Upload Data')
 
     # Update current page based on button clicks
     if upload_button:
@@ -93,7 +93,7 @@ else:
                     <div style="color: white; font-size: 32px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
                         {label}
                     </div>
-                    <div style="align: right; background-color: white; color: black; font-size: 24px; font-weight: bold; text-align: right; padding: 5px; width: 80%;">
+                    <div style="align: right; background-image: linear-gradient(to left, transparent, #37faa9); color: white; font-size: 24px; font-weight: bold; text-align: right; padding: 5px; width: 80%;">
                         {value}
                     </div>
                 </div>
@@ -144,21 +144,71 @@ else:
 
                 st.plotly_chart(fig, use_container_width=True)
             
-            c1a, c2a, c3a = st.columns(3)
-
+            # Top 5 Section
+            c1a, c2a, c3a = st.columns([2, 0.3, 2])
+            
+            # Styling for Top 5 section
+            def top_5_styling(label, value):
+                return f"""
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 20px; font-weight: bold; color: white; text-align: left; width: fit-content;">
+                        {label}
+                    </div>
+                    <div style="flex-grow: 1; height: 2px; background-image: linear-gradient(to right, white, #37faa9); margin: 0 10px;"></div>
+                    <div style="font-size: 16px; font-weight: bold; color: #37faa9; text-align: right; width: fit-content;">
+                        {value}
+                    </div>
+                </div>
+                """
+            
+            # Top 5 - Streams
             with c1a:
                 st.header('Top 5 Releases')
-                top5releases = cad.groupby('Title')['Quantity'].sum()
-                st.write(top5releases.head())
-            
-            with c2a:
+                st.subheader('Streams')
+                top5releases_s = cad.groupby('Title')['Quantity'].sum().sort_values(ascending = False).head()
+                for title, quantity in top5releases_s.items():
+                    st.markdown(top_5_styling(title, quantity), unsafe_allow_html=True)
+                st.write('') # Empty for spacing
+
                 st.header('Top 5 Countries')
-                st.write(country_streams_exu.head())
+                st.subheader('Streams')
+                top5countries_s = cad[cad['Country'] != 'Unknown'].groupby('Country')['Quantity'].sum().sort_values(ascending = False).head()
+                for country, title in top5countries_s.items():
+                    st.markdown(top_5_styling(country, title), unsafe_allow_html=True)
+                st.write('') # Empty for spacing
             
-            with c3a:
                 st.header('Top 5 Platforms')
-                top5platforms = cad.groupby('Store')['Quantity'].sum()
-                st.write(top5platforms.head())
+                st.subheader('Streams')
+                top5platforms_s = cad.groupby('Store')['Quantity'].sum().sort_values(ascending = False).head()
+                for store, quantity in top5platforms_s.items():
+                    st.markdown(top_5_styling(store, quantity), unsafe_allow_html=True)
+
+            # Spacing column
+            with c2a:
+                st.write('')
+
+            # Top 5 - Earnings
+            with c3a:
+            # Top 5 Earnings section
+                st.header('') # Empty for spacing
+                st.subheader('Earnings (USD)')
+                top5releases_e = cad.groupby('Title')['Earnings'].sum().sort_values(ascending = False).head()
+                for title, earnings in top5releases_e.items():
+                    st.markdown(top_5_styling(title, f"${round(earnings, 2):,}"), unsafe_allow_html=True)
+                st.write('') # Empty for spacing
+
+                st.header('') # Empty for spacing
+                st.subheader('Earnings (USD)')
+                top5countries_e = cad[cad['Country'] != 'Unknown'].groupby('Country')['Earnings'].sum().sort_values(ascending = False).head()
+                for country, earnings in top5countries_e.items():
+                    st.markdown(top_5_styling(country, f"${round(earnings, 2):,}"), unsafe_allow_html=True)
+                st.write('') # Empty for spacing
+
+                st.header('') # Empty for spacing
+                st.subheader('Earnings (USD)')
+                top5platforms_e = cad.groupby('Store')['Earnings'].sum().sort_values(ascending = False).head()
+                for store, earnings in top5platforms_e.items():
+                    st.markdown(top_5_styling(store, f"${round(earnings, 2):,}"), unsafe_allow_html=True)
 
         elif st.session_state.current_page == 'Streams':
             st.title('Streaming Metrics')
