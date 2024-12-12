@@ -103,7 +103,7 @@ else:
                 st.title('Key Metrics')
                 st.markdown(key_metric_styling('Total Streams', f"{total_streams:,}"), unsafe_allow_html=True)
                 st.markdown(key_metric_styling('Total Earnings (USD)', f"${round(total_earnings, 2):,}"), unsafe_allow_html=True)
-                st.markdown(key_metric_styling('Average Earnings/Stream', f"${round(avg_eps, 5):,}"), unsafe_allow_html=True)
+                st.markdown(key_metric_styling('Average Earnings/Stream', f"${round(avg_eps, 5):,} (AES)"), unsafe_allow_html=True)
 
             with c2:
                 st.title('International Reach')
@@ -143,15 +143,28 @@ else:
                 )
 
                 st.plotly_chart(fig, use_container_width=True)
+            
+            c1a, c2a, c3a = st.columns(3)
+
+            with c1a:
+                st.header('Top 5 Releases')
+                top5releases = cad.groupby('Title')['Quantity'].sum()
+                st.write(top5releases.head())
+            
+            with c2a:
+                st.header('Top 5 Countries')
+                st.write(country_streams_exu.head())
+            
+            with c3a:
+                st.header('Top 5 Platforms')
+                top5platforms = cad.groupby('Store')['Quantity'].sum()
+                st.write(top5platforms.head())
 
         elif st.session_state.current_page == 'Streams':
             st.title('Streaming Metrics')
-            # Add content for Streams page
 
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
-            # Add content for Earnings page
 
         elif st.session_state.current_page == 'Marketing':
             st.title('Marketing Strategies')
-            # Add content for Marketing page
