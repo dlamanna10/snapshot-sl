@@ -80,7 +80,7 @@ else:
         cad = st.session_state['cad']
         if st.session_state.current_page == 'Home':
             st.title('At a glance...')
-            c1, c2, c3 = st.columns([0.8, 1, 1.3])
+            c1, c2, c3 = st.columns(3)
 
             # Key metrics for home page
             total_streams = cad['Quantity'].sum()
@@ -90,11 +90,11 @@ else:
             def key_metric_styling(label, value):
                 return f"""
                 <div style="padding: 5px; text-align: left; display: inline-block; width: 100%;">
-                    <div style="color: white; font-size: 24px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
+                    <div style="color: white; font-size: 30px; font-weight: bold; background-color: transparent; padding: 5px; text-decoration: underline;">
                         {label}
                     </div>
-                    <div style="align: right; background-image: linear-gradient(to left, transparent, #37faa9); color: white; 
-                        font-size: 18px; font-weight: bold; text-align: right; padding: 5px; width: 100%;">
+                    <div style="align: right; background-image: linear-gradient(to right, transparent, #37faa9); color: white; 
+                        font-size: 24px; font-weight: bold; text-align: left; padding: 5px; width: 100%;">
                         {value}
                     </div>
                 </div>
