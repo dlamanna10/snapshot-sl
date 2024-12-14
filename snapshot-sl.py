@@ -213,6 +213,16 @@ else:
 
         elif st.session_state.current_page == 'Streams':
             st.title('Streaming Metrics')
+            st.subheader('Stream Distribution by Platform')
+            platform_streams = cad.groupby('Store')['Quantity'].sum().sort_values(ascending = False).reset_index()
+            platform_streams = platform_streams[platform_streams['Quantity'] > 1000]
+            fig = px.pie(
+                platform_streams, names = 'Platform', values = 'Quantity', 
+                hover_data = {'Quantity' : True}, labels = {'Quantity' : 'Total Streams'},
+                color_discrete_sequence = px.colors.sequential.Mint
+            )           
+            fig.update_traces(textinfo = 'percent+label')
+            st.plotly_chart(fig, use_conntainer_width=True) 
 
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
