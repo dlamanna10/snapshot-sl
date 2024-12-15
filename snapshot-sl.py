@@ -29,6 +29,25 @@ def cleaning_process(artist_data):
         artist_data['Country'] = artist_data['Country of Sale'].apply(get_country_name)
         artist_data = artist_data.drop(columns=['Country of Sale'])
 
+    if 'Reporting Date' in artist_data.columns:
+            artist_data['Reporting Date'] = artist_data['Reporting Date'].astype(str)
+
+            # Replace invalid entries (e.g., '#') with NaN
+            artist_data['Reporting Date'] = artist_data['Reporting Date'].replace(r'^[#]+$', pd.NA, regex=True)
+
+            # Convert valid Reporting Date to datetime
+            artist_data['Reporting Date'] = pd.to_datetime(artist_data['Reporting Date'], errors='coerce', format='%Y-%m-%d')
+
+            # For rows with missing Reporting Date, infer from Sale Month
+            if 'Sale Month' in artist_data.columns:
+                missing_reporting_date = artist_data['Reporting Date'].isna()
+                artist_data.loc[missing_reporting_date, 'Reporting Date'] = pd.to_datetime(
+                    artist_data.loc[missing_reporting_date, 'Sale Month'] + '-01', errors='coerce'
+                )
+
+            # Optional: Drop rows with invalid dates after all attempts to clean
+            artist_data = artist_data.dropna(subset=['Reporting Date'])    
+
     return artist_data
 
 if 'uploaded_file' not in st.session_state:
@@ -138,9 +157,7 @@ else:
                 geo=dict(
                     bgcolor='black',
                     landcolor='white'
-                ),
-                title=None, margin=dict(l=0, r=0, t=0, b=0),
-                height=400
+                ), title=None, margin=dict(l=0, r=0, t=0, b=0), height=400
             )
 
             st.plotly_chart(fig, use_container_width=True)
@@ -213,16 +230,69 @@ else:
 
         elif st.session_state.current_page == 'Streams':
             st.title('Streaming Metrics')
-            st.subheader('Stream Distribution by Platform')
-            platform_streams = cad.groupby('Store')['Quantity'].sum().sort_values(ascending = False).reset_index()
-            platform_streams = platform_streams[platform_streams['Quantity'] > 1000]
-            fig = px.pie(
-                platform_streams, names = 'Platform', values = 'Quantity', 
-                hover_data = {'Quantity' : True}, labels = {'Quantity' : 'Total Streams'},
-                color_discrete_sequence = px.colors.sequential.Mint
-            )           
-            fig.update_traces(textinfo = 'percent+label')
-            st.plotly_chart(fig, use_conntainer_width=True) 
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+                st.subheader('Stream Distribution by Platform')
+                platform_streams = cad.groupby('Store')['Quantity'].sum().sort_values(ascending = False).reset_index()
+                total_streams = platform_streams['Quantity'].sum()
+                platform_streams['Percentage'] = (platform_streams['Quantity'] / total_streams) * 100
+                
+                threshold = 3
+                large_stores = platform_streams[platform_streams['Percentage'] >= threshold]
+                small_stores = platform_streams[platform_streams['Percentage'] < threshold]
+
+                # Combine small stores into 'Other'
+                other_row = pd.DataFrame({
+                    'Store': ['Other'],
+                    'Quantity': [small_stores['Quantity'].sum()],
+                    'Percentage': [small_stores['Percentage'].sum()]
+                })
+
+                # Append the 'Other' category to large stores
+                platform_data = pd.concat([large_stores, other_row], ignore_index=True)
+                
+                fig = px.pie(
+                    platform_data, 
+                    names='Store', 
+                    values='Quantity', 
+                    hover_data={'Percentage': ':.2f'},  # Show percentage with 2 decimal places
+                    labels={'Quantity': 'Total Streams', 'Percentage': 'Percentage Contribution'},
+                    color_discrete_sequence=px.colors.sequential.Mint
+                )
+                fig.update_traces(textinfo='percent+label', hole=0.4)
+                st.plotly_chart(fig, use_container_width=True)
+
+            with c2:
+                st.subheader('Total Streams by Year')
+
+                cad['Reporting Date'] = pd.to_datetime(cad['Reporting Date'], format = '%m/%d/%Y')
+                cad['Year'] = cad['Reporting Date'].dt.year
+                yearly_streams = cad.groupby('Year')['Quantity'].sum().reset_index()
+
+                fig = px.bar(
+                    yearly_streams,
+                    x = 'Year', y = 'Quantity',
+                    labels = {'Quantity':'Total Streams', 'Year':'Year'},
+                    color='Year'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            st.subheader('Total Streams by Month')
+            cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
+            cad['Month'] = cad['Sale Month'].dt.to_period('M') 
+            monthly_streams = cad.groupby('Month')['Quantity'].sum().reset_index()
+            monthly_streams['Month'] = monthly_streams['Month'].dt.to_timestamp()
+            
+            fig = px.line(
+                monthly_streams, x='Month', y='Quantity',
+                labels={'Quantity':'Total Streams', 'Month':'Month'},
+                color_discrete_sequence=px.colors.sequential.Mint,
+                line_shape='spline'
+            )
+            fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
+            st.plotly_chart(fig, use_container_width=True)
 
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
