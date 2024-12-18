@@ -264,11 +264,11 @@ else:
                 fig.update_traces(textinfo='percent+label', hole=0.4)
                 st.plotly_chart(fig, use_container_width=True)
 
+            cad['Reporting Date'] = pd.to_datetime(cad['Reporting Date'], format = '%m/%d/%Y')
+            cad['Year'] = cad['Reporting Date'].dt.year
+
             with c2:
                 st.subheader('Total Streams by Year')
-
-                cad['Reporting Date'] = pd.to_datetime(cad['Reporting Date'], format = '%m/%d/%Y')
-                cad['Year'] = cad['Reporting Date'].dt.year
                 yearly_streams = cad.groupby('Year')['Quantity'].sum().reset_index()
 
                 fig = px.bar(
@@ -293,6 +293,108 @@ else:
             )
             fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
             st.plotly_chart(fig, use_container_width=True)
+
+            st.header('Release Analysis')
+            selected_title = st.selectbox('Release:', options=cad['Title'].unique())
+            c1a, c2a, c3a = st.columns(3)
+
+            with c1a:
+                title_data = cad[cad['Title'] == selected_title]
+                platform_title_streams = title_data.groupby('Store')['Quantity'].sum().sort_values(ascending=False).reset_index()
+
+                # Calculate total streams and percentage contribution
+                total_streams = title_data['Quantity'].sum()
+                platform_title_streams['Percentage'] = (platform_title_streams['Quantity'] / total_streams) * 100
+
+                # Threshold for grouping small stores into 'Other'
+                threshold = 1.5
+                large_stores = platform_title_streams[platform_title_streams['Percentage'] >= threshold]
+                small_stores = platform_title_streams[platform_title_streams['Percentage'] < threshold]
+
+                # Combine small stores into 'Other' if necessary
+                if not small_stores.empty:
+                    other_row = pd.DataFrame({
+                        'Store': ['Other'],
+                        'Quantity': [small_stores['Quantity'].sum()],
+                        'Percentage': [small_stores['Percentage'].sum()]
+                    })
+                    title_stream_data = pd.concat([large_stores, other_row], ignore_index=True)
+                else:
+                    title_stream_data = large_stores
+
+                # Sort so "Other" appears last
+                title_stream_data = title_stream_data.sort_values(by='Store', ascending=True)
+
+                # Create the pie chart
+                fig = px.pie(
+                    title_stream_data, 
+                    title='Stream Distribution by Platform',
+                    names='Store', 
+                    values='Quantity', 
+                    hover_data={'Percentage': ':.2f'},
+                    labels={'Quantity': 'Total Streams', 'Percentage': 'Percentage Contribution'},
+                    color_discrete_sequence=px.colors.sequential.Mint
+                )
+
+                # Customize traces and layout
+                fig.update_traces(
+                    textinfo='percent+label', 
+                    hole=0.4,
+                    hovertemplate="<b>%{label}</b><br>Streams: %{value:,}<br>Percentage: %{customdata:.2f}%"
+                )
+
+                # Display the chart
+                st.plotly_chart(fig, use_container_width=True)
+
+            with c2a:
+                yearly_streams = title_data.groupby('Year')['Quantity'].sum().reset_index()
+                fig_year = px.bar(yearly_streams, x='Year', y='Quantity', title="Streams by Year",
+                                labels={'Quantity': 'Total Streams', 'Year': 'Year'},
+                                color='Year')
+                st.plotly_chart(fig_year, use_container_width=True)
+
+            with c3a:
+                title_monthly_streams = title_data.groupby('Month')['Quantity'].sum().reset_index()
+                title_monthly_streams['Month'] = title_monthly_streams['Month'].dt.to_timestamp()
+                
+                fig = px.line(
+                    title_monthly_streams, x='Month', y='Quantity',
+                    title='Streams by Month',
+                    labels={'Quantity':'Total Streams', 'Month':'Month'},
+                    color_discrete_sequence=px.colors.sequential.Mint,
+                    line_shape='spline'
+                )
+                fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
+                st.plotly_chart(fig, use_container_width=True)
+
+
+            st.subheader('All Releases')
+            def release_styling(title, value):
+                return f"""
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 20px; font-weight: bold; color: white; text-align: left; width: fit-content;">
+                        {title}
+                    </div>
+                    <div style="flex-grow: 1; height: 2px; background-image: linear-gradient(to right, white, #37faa9); margin: 0 10px;"></div>
+                    <div style="font-size: 16px; font-weight: bold; color: #37faa9; text-align: right; width: fit-content;">
+                        {value:,}
+                    </div>
+                </div>
+                """
+
+            earliest_year = cad.groupby('Title')['Year'].min().reset_index()
+            total_streams = cad.groupby('Title')['Quantity'].sum().reset_index()
+            title_summary = pd.merge(earliest_year, total_streams, on='Title')
+            title_summary = title_summary.sort_values(by=['Year', 'Quantity'], ascending=[True, False])
+
+            current_year = None
+            for _, row in title_summary.iterrows():
+                if row['Year'] != current_year:
+                    st.markdown(f"<div style='font-size: 24px; font-weight: bold; color: #37faa9; margin-top: 20px;'>{row['Year']}</div>", unsafe_allow_html=True)
+                    current_year = row['Year']
+                st.markdown(release_styling(row['Title'], row['Quantity']), unsafe_allow_html=True)
+
+
 
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
