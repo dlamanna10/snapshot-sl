@@ -399,5 +399,169 @@ else:
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
 
+            c1, c2 = st.columns(2)
+
+            with c1:
+                st.subheader('Earning Distribution by Platform')
+                platform_earnings = cad.groupby('Store')['Earnings'].sum().sort_values(ascending = False).reset_index()
+                platform_earnings['Earnings'] = platform_earnings['Earnings'].round(2)
+                total_earnings = platform_earnings['Earnings'].sum()
+                platform_earnings['Percentage'] = (platform_earnings['Earnings'] / total_earnings) * 100
+                
+                threshold = 3
+                large_stores = platform_earnings[platform_earnings['Percentage'] >= threshold]
+                small_stores = platform_earnings[platform_earnings['Percentage'] < threshold]
+
+                # Combine small stores into 'Other'
+                other_row = pd.DataFrame({
+                    'Store': ['Other'],
+                    'Earnings': [small_stores['Earnings'].sum()],
+                    'Percentage': [small_stores['Percentage'].sum()]
+                })
+
+                # Append the 'Other' category to large stores
+                platform_data = pd.concat([large_stores, other_row], ignore_index=True)
+                
+                fig = px.pie(
+                    platform_data, 
+                    names='Store', 
+                    values='Earnings', 
+                    hover_data={'Percentage': ':.2f'},  # Show percentage with 2 decimal places
+                    labels={'Quantity': 'Total Earnings', 'Percentage': 'Percentage Contribution'},
+                    color_discrete_sequence=px.colors.sequential.Mint
+                )
+                fig.update_traces(textinfo='percent+label', hole=0.4)
+                st.plotly_chart(fig, use_container_width=True)
+
+            cad['Reporting Date'] = pd.to_datetime(cad['Reporting Date'], format = '%m/%d/%Y')
+            cad['Year'] = cad['Reporting Date'].dt.year
+
+            with c2:
+                st.subheader('Total Earnings by Year')
+                yearly_earnings = cad.groupby('Year')['Earnings'].sum().reset_index()
+                yearly_earnings['Earnings'] = yearly_earnings['Earnings'].round(2)
+
+                fig = px.bar(
+                    yearly_earnings,
+                    x = 'Year', y = 'Earnings',
+                    labels = {'Earnings':'Total Earnings', 'Year':'Year'},
+                    color='Year'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            st.subheader('Total Earnings by Month')
+            cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
+            cad['Month'] = cad['Sale Month'].dt.to_period('M') 
+            monthly_earnings = cad.groupby('Month')['Earnings'].sum().reset_index()
+            monthly_earnings['Earnings'] = monthly_earnings['Earnings'].round(2)
+            monthly_earnings['Month'] = monthly_earnings['Month'].dt.to_timestamp()
+            
+            fig = px.line(
+                monthly_earnings, x='Month', y='Earnings',
+                labels={'Earnings':'Total Earnings', 'Month':'Month'},
+                color_discrete_sequence=px.colors.sequential.Mint,
+                line_shape='spline'
+            )
+            fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
+            st.plotly_chart(fig, use_container_width=True)
+
+            st.header('Release Analysis')
+            selected_title = st.selectbox('Release:', options=cad['Title'].unique())
+            c1a, c2a, c3a = st.columns(3)
+
+            with c1a:
+                title_data = cad[cad['Title'] == selected_title]
+                platform_title_earnings = title_data.groupby('Store')['Earnings'].sum().sort_values(ascending=False).reset_index()
+                platform_title_earnings['Earnings'] = platform_title_earnings['Earnings'].round(2)
+
+                total_earnings = title_data['Earnings'].sum()
+                platform_title_earnings['Percentage'] = (platform_title_earnings['Earnings'] / total_earnings) * 100
+
+                threshold = 1.5
+                large_stores = platform_title_earnings[platform_title_earnings['Percentage'] >= threshold]
+                small_stores = platform_title_earnings[platform_title_earnings['Percentage'] < threshold]
+
+                if not small_stores.empty:
+                    other_row = pd.DataFrame({
+                        'Store': ['Other'],
+                        'Earnings': [small_stores['Earnings'].sum()],
+                        'Percentage': [small_stores['Percentage'].sum()]
+                    })
+                    title_earning_data = pd.concat([large_stores, other_row], ignore_index=True)
+                else:
+                    title_earning_data = large_stores
+
+                title_earning_data = title_earning_data.sort_values(by='Store', ascending=True)
+
+                fig = px.pie(
+                    title_earning_data, 
+                    title='Earnings by Platform',
+                    names='Store', 
+                    values='Earnings', 
+                    hover_data={'Percentage': ':.2f'},
+                    labels={'Earnings': 'Total Earnings', 'Percentage': 'Percentage Contribution'},
+                    color_discrete_sequence=px.colors.sequential.Mint
+                )
+
+                # Customize traces and layout
+                fig.update_traces(
+                    textinfo='percent+label', 
+                    hole=0.4,
+                    hovertemplate="<b>%{label}</b><br>Earnings: $%{value:,}<br>Percentage: %{customdata:.2f}%"
+                )
+
+                # Display the chart
+                st.plotly_chart(fig, use_container_width=True)
+
+            with c2a:
+                yearly_earnings = title_data.groupby('Year')['Earnings'].sum().reset_index()
+                yearly_earnings['Earnings'] = yearly_earnings['Earnings'].round(2)
+                fig_year = px.bar(yearly_earnings, x='Year', y='Earnings', title="Earnings by Year",
+                                labels={'Earnings': 'Total Earnings', 'Year': 'Year'},
+                                color='Year')
+                st.plotly_chart(fig_year, use_container_width=True)
+
+            with c3a:
+                title_monthly_streams = title_data.groupby('Month')['Earnings'].sum().reset_index()
+                title_monthly_streams['Month'] = title_monthly_streams['Month'].dt.to_timestamp()
+                
+                fig = px.line(
+                    title_monthly_streams, x='Month', y='Earnings',
+                    title='Earnings by Month',
+                    labels={'Earnings':'Total Earnings', 'Month':'Month'},
+                    color_discrete_sequence=px.colors.sequential.Mint,
+                    line_shape='spline'
+                )
+                fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
+                st.plotly_chart(fig, use_container_width=True)
+
+
+            st.subheader('All Releases (USD)')
+            def release_styling(title, value):
+                return f"""
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 20px; font-weight: bold; color: white; text-align: left; width: fit-content;">
+                        {title}
+                    </div>
+                    <div style="flex-grow: 1; height: 2px; background-image: linear-gradient(to right, white, #37faa9); margin: 0 10px;"></div>
+                    <div style="font-size: 16px; font-weight: bold; color: #37faa9; text-align: right; width: fit-content;">
+                        ${value:,}
+                    </div>
+                </div>
+                """
+
+            earliest_year = cad.groupby('Title')['Year'].min().reset_index()
+            total_earnings = cad.groupby('Title')['Earnings'].sum().reset_index()
+            total_earnings['Earnings'] = total_earnings['Earnings'].round(2)
+            title_summary = pd.merge(earliest_year, total_earnings, on='Title')
+            title_summary = title_summary.sort_values(by=['Year', 'Earnings'], ascending=[True, False])
+
+            current_year = None
+            for _, row in title_summary.iterrows():
+                if row['Year'] != current_year:
+                    st.markdown(f"<div style='font-size: 24px; font-weight: bold; color: #37faa9; margin-top: 20px;'>{row['Year']}</div>", unsafe_allow_html=True)
+                    current_year = row['Year']
+                st.markdown(release_styling(row['Title'], row['Earnings']), unsafe_allow_html=True)
+
         elif st.session_state.current_page == 'Marketing':
             st.title('Marketing Strategies')
