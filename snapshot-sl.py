@@ -63,6 +63,7 @@ with st.sidebar:
     streams_button = st.button("🎵 Streams")
     earnings_button = st.button("💲 Earnings")
     marketing_button = st.button("📣 Marketing")
+    analysis_button = st.button('Platform Analysis')
     upload_button = st.button('🗃️ Upload Data')
 
     # Update current page based on button clicks
@@ -565,3 +566,5 @@ else:
 
         elif st.session_state.current_page == 'Marketing':
             st.title('Marketing Strategies')
+            st.header('Work in Progress')
+            st.subheader('To include: Platform-Based Marketing Focus, Regional Highlights, High performing tracks to remix with features or create videos for')
