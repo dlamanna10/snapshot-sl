@@ -396,7 +396,6 @@ else:
                 st.markdown(release_styling(row['Title'], row['Quantity']), unsafe_allow_html=True)
 
 
-
         elif st.session_state.current_page == 'Earnings':
             st.title('Earnings Metrics')
 
@@ -568,3 +567,8 @@ else:
             st.title('Marketing Strategies')
             st.header('Work in Progress')
             st.subheader('To include: Platform-Based Marketing Focus, Regional Highlights, High performing tracks to remix with features or create videos for')
+
+        elif st.session_state.current_page == 'Platform Analysis':
+            st.title('Platform Analysis')
+            st.header('Work in Progress')
+            st.subheader('Display')
