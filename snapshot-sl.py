@@ -572,17 +572,25 @@ else:
 
         elif st.session_state.current_page == 'Platform Analysis':
             st.title('Platform Analysis')
-            st.header('Work in Progress')
-            st.subheader('This page will showcase an analysis of platform specific earnings per stream to allow an artist a better understanding of income and which platforms to market towards.')
             
             cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
-            cad['Month'] = cad['Sale Month'].dt.to_period('M') 
+            cad['Month'] = cad['Sale Month'].dt.to_period('M')
+            cad['Month'] = cad['Month'].dt.to_timestamp() 
 
             aes_platform_m = cad.groupby(['Month','Store']).agg({
                 'Earnings' : 'sum',
                 'Quantity' : 'sum'
             }).reset_index()
             aes_platform_m['AES'] = aes_platform_m['Earnings'] / aes_platform_m['Quantity']
+
+            st.subheader('Platform AES by Month')
+            fig = px.line(
+                aes_platform_m, x='Month', y='AES', color = 'Store',
+                labels={'AES':'AES', 'Month':'Month'},
+                line_shape='spline'
+            )
+            fig.update_traces(fill='tozeroy', opacity=0.2, mode='lines+markers')
+            st.plotly_chart(fig, use_container_width=True)
 
             st.dataframe(aes_platform_m)
             
