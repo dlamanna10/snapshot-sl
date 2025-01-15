@@ -3,7 +3,7 @@ import streamlit as st
 import pycountry
 import plotly.express as px
 
-st.set_page_config(page_title='Snapshot', page_icon='📊', layout='wide')
+st.set_page_config(page_title='Snapshot', page_icon='📸', layout='wide')
 
 def cleaning_process(artist_data):
     # Drop unnecessary columns
@@ -62,8 +62,8 @@ with st.sidebar:
     home_button = st.button("🏠 Home")
     streams_button = st.button("🎵 Streams")
     earnings_button = st.button("💲 Earnings")
-    marketing_button = st.button("📣 Marketing")
-    analysis_button = st.button('Platform Analysis')
+    # marketing_button = st.button("📣 Marketing")
+    analysis_button = st.button('📈 Platform Analysis')
     upload_button = st.button('🗃️ Upload Data')
 
     # Update current page based on button clicks
@@ -76,8 +76,10 @@ with st.sidebar:
             st.session_state.current_page = 'Streams'
         elif earnings_button:
             st.session_state.current_page = 'Earnings'
-        elif marketing_button:
-            st.session_state.current_page = 'Marketing'
+        #elif marketing_button:
+        #    st.session_state.current_page = 'Marketing'
+        elif analysis_button:
+            st.session_state.current_page = 'Platform Analysis'
     else:
         st.session_state.current_page = 'Upload'
 
@@ -563,12 +565,25 @@ else:
                     current_year = row['Year']
                 st.markdown(release_styling(row['Title'], row['Earnings']), unsafe_allow_html=True)
 
-        elif st.session_state.current_page == 'Marketing':
-            st.title('Marketing Strategies')
-            st.header('Work in Progress')
-            st.subheader('To include: Platform-Based Marketing Focus, Regional Highlights, High performing tracks to remix with features or create videos for')
+        # elif st.session_state.current_page == 'Marketing':
+        #     st.title('Marketing Strategies')
+        #     st.header('Work in Progress')
+        #     st.subheader('To include: Platform-Based Marketing Focus, Regional Highlights, High performing tracks to remix with features or create videos for')
 
         elif st.session_state.current_page == 'Platform Analysis':
             st.title('Platform Analysis')
             st.header('Work in Progress')
-            st.subheader('Display')
+            st.subheader('This page will showcase an analysis of platform specific earnings per stream to allow an artist a better understanding of income. This will allow an artist to target platforms that pay more per stream.')
+            
+            cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
+            cad['Month'] = cad['Sale Month'].dt.to_period('M') 
+
+            aes_platform_m = cad.groupby(['Month','Store']).agg({
+                'Earnings' : 'sum',
+                'Quantity' : 'sum'
+            }).reset_index()
+            aes_platform_m['AES'] = aes_platform_m['Earnings'] / aes_platform_m['Quantity']
+
+            st.dataframe(aes_platform_m)
+            
+            
