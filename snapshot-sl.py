@@ -85,13 +85,13 @@ with st.sidebar:
 
 if st.session_state.current_page == 'Upload':
     st.title('Data Upload')
-    st.write('Upload your DistroKid data here (convert to csv before beginning)')
+    st.write('Upload your DistroKid data here.')
 
-    uploaded_file = st.file_uploader("Upload your file here", type=['csv'])
+    uploaded_file = st.file_uploader("Upload your file here", type=['tsv'])
 
     if uploaded_file is not None:
         st.session_state['uploaded_file'] = uploaded_file
-        raw_data = pd.read_csv(uploaded_file)
+        raw_data = pd.read_csv(uploaded_file, sep='\t')
         st.session_state['cad'] = cleaning_process(raw_data)
         st.success("File uploaded successfully! You can now navigate to other pages.")
 
@@ -573,7 +573,7 @@ else:
         elif st.session_state.current_page == 'Platform Analysis':
             st.title('Platform Analysis')
             st.header('Work in Progress')
-            st.subheader('This page will showcase an analysis of platform specific earnings per stream to allow an artist a better understanding of income. This will allow an artist to target platforms that pay more per stream.')
+            st.subheader('This page will showcase an analysis of platform specific earnings per stream to allow an artist a better understanding of income and which platforms to market towards.')
             
             cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
             cad['Month'] = cad['Sale Month'].dt.to_period('M') 
