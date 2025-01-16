@@ -572,6 +572,22 @@ else:
 
         elif st.session_state.current_page == 'Platform Analysis':
             st.title('Platform Analysis')
+
+            selected_stores = ['Spotify', 'Apple Music', 'Amazon Unlimited (Streaming)', 'YouTube (Ads)', 'YouTube (Red)']
+            aes_plat = cad[cad['Store'].isin(selected_stores)]
+            aes_plat = aes_plat.groupby('Store').agg({
+                'Earnings' : 'sum',
+                'Quantity' : 'sum'
+            })
+            aes_plat['AES'] = aes_plat['Earnings'] / aes_plat['Quantity']
+            aes_plat = aes_plat.reset_index()
+            aes_plat_top5 = aes_plat.sort_values(by='AES', ascending=False)
+            st.subheader('Most Popular Platforms (AES)')
+            fig = px.bar(
+                aes_plat_top5, x = 'Store', y = 'AES', color = 'Store',
+                labels = {'AES' : 'AES', 'Store' : 'Store'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
             
             cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
             cad['Month'] = cad['Sale Month'].dt.to_period('M')
@@ -582,6 +598,7 @@ else:
                 'Quantity' : 'sum'
             }).reset_index()
             aes_platform_m['AES'] = aes_platform_m['Earnings'] / aes_platform_m['Quantity']
+
 
             st.subheader('Platform AES by Month')
             fig = px.line(
