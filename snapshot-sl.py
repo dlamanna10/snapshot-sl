@@ -584,9 +584,11 @@ else:
             aes_plat_top5 = aes_plat.sort_values(by='AES', ascending=False)
             st.subheader('Most Popular Platforms (AES)')
             fig = px.bar(
-                aes_plat_top5, x = 'Store', y = 'AES', color = 'Store',
-                labels = {'AES' : 'AES', 'Store' : 'Store'}
+                aes_plat_top5, x = 'AES', y = 'Store', color = 'Store',
+                labels = {'AES' : 'AES', 'Store' : 'Platform'},
+                orientation = 'h'
             )
+            fig.update_layout(xaxis_title = 'AES ($USD)', yaxis_title = 'Platform', xaxis=dict(side="top"))
             st.plotly_chart(fig, use_container_width=True)
             
             cad['Sale Month'] = pd.to_datetime(cad['Sale Month'], format='%Y-%m')
