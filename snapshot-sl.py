@@ -95,6 +95,14 @@ if st.session_state.current_page == 'Upload':
         st.session_state['cad'] = cleaning_process(raw_data)
         st.success("File uploaded successfully! You can now navigate to other pages.")
 
+        csv = st.session_state['cad'].to_csv(index=False)  # Convert DataFrame to CSV
+        st.download_button(
+            label="Converted Data (CSV)",
+            data=csv,
+            file_name="Artist_Data.csv",
+            mime="text/csv"
+        )
+
 else:
     if st.session_state['cad'] is None:
         st.title('Please upload data to begin.')
@@ -610,6 +618,9 @@ else:
             )
             fig.update_traces(fill='tozeroy', opacity=0.2, mode='lines+markers')
             st.plotly_chart(fig, use_container_width=True)
+
+            st.subheader('Future AES')
+            st.write('These predictions are created using a regression analysis of your data.')
 
             st.dataframe(aes_platform_m)
             
