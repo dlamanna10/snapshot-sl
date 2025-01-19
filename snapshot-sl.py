@@ -1,7 +1,9 @@
 import pandas as pd
+import numpy as np
 import streamlit as st
 import pycountry
 import plotly.express as px
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 st.set_page_config(page_title='Snapshot', page_icon='📸', layout='wide')
 
@@ -542,7 +544,7 @@ else:
                     color_discrete_sequence=px.colors.sequential.Mint,
                     line_shape='spline'
                 )
-                fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'),mode='lines+markers')
+                fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'), mode='lines+markers')
                 st.plotly_chart(fig, use_container_width=True)
 
 
@@ -619,9 +621,50 @@ else:
             fig.update_traces(fill='tozeroy', opacity=0.2, mode='lines+markers')
             st.plotly_chart(fig, use_container_width=True)
 
-            st.subheader('Future AES')
-            st.write('These predictions are created using a regression analysis of your data.')
+            st.subheader('12-Month Forecast: Spotify')
 
-            st.dataframe(aes_platform_m)
+            # Preprocessing
+            stores = aes_platform_m['Store'].unique()
+            stores_df = {store : aes_platform_m[aes_platform_m['Store'] == store].copy() for store in stores}
+
+            # Separate analysis showed promise in Spotify and Apple Music
+            spotify_data = stores_df['Spotify']
+            apple_data = stores_df['Apple Music']
+            # Time Series
+            spotify_ts = spotify_data.set_index('Month')['AES']
+            spotify_ts = spotify_ts.asfreq('MS')
+            apple_ts = apple_data.set_index('Month')['AES']
+            apple_ts = apple_ts.asfreq('MS')
+
+            # Building the Spotify model using SARIMAX for AES forecasting
+            holdout = 6
+            train_data = spotify_ts[:-holdout]
+            test_data = spotify_ts[-holdout:]
+
+            aes_model_spotify = SARIMAX(spotify_ts, order = (1, 0, 0), seasonal_order=(1, 0, 0, 12))
+            aes_model_fit = aes_model_spotify.fit()
+
+            # Turning the forecast data into a visualization (line chart)
+
+            forecast_spotify = aes_model_fit.forecast(steps = 12)
+
+            forecast_spotify_df = pd.DataFrame({
+                'Month': pd.date_range(start = spotify_ts.index[-1] + pd.offsets.MonthBegin(), periods = 12, freq = "MS"),
+                'AES': forecast_spotify
+            })
+
+            forecast_spotify_df['AES_Text'] = forecast_spotify_df['AES'].apply(lambda x: f"${x:.4f}")
             
+            fig = px.line(
+                forecast_spotify_df, x = 'Month', y = 'AES',
+                labels = {'AES': 'AES', 'Month': 'Month'},
+                line_shape = 'spline'
+            )
+            fig.update_traces(fill='tozeroy', fillcolor='rgba(186, 247, 221, 0.5)', opacity=0.2, line=dict(color='#37faa9'), 
+                              mode = 'lines+markers+text', text=forecast_spotify_df['AES_Text'], textposition='top center')
+            st.plotly_chart(fig)
+
+            st.write('These forecasts are created using your streaming data. This process utilizes the SARIMAX model.')
             
+            st.subheader('12-Month Forecast: Apple Music')
+            st.write('Work in progress.')
