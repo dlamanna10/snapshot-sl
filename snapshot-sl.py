@@ -3,7 +3,7 @@ import numpy as np
 import streamlit as st
 import pycountry
 import plotly.express as px
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+from prophet import Prophet
 
 st.set_page_config(page_title='Snapshot', page_icon='📸', layout='wide')
 
@@ -629,30 +629,17 @@ else:
 
             # Separate analysis showed promise in Spotify and Apple Music
             spotify_data = stores_df['Spotify']
-            apple_data = stores_df['Apple Music']
-            # Time Series
-            spotify_ts = spotify_data.set_index('Month')['AES']
-            spotify_ts = spotify_ts.asfreq('MS')
-            apple_ts = apple_data.set_index('Month')['AES']
-            apple_ts = apple_ts.asfreq('MS')
+            # Rename for sake of Prophet model
+            spotify_data.rename(columns={'Month': 'ds', 'AES': 'y'}, inplace = True)
+            # Fitting the model
+            spotify_model = Prophet()
+            spotify_model.fit(spotify_data)
 
-            # Building the Spotify model using SARIMAX for AES forecasting
-            holdout = 6
-            train_data = spotify_ts[:-holdout]
-            test_data = spotify_ts[-holdout:]
-
-            aes_model_spotify = SARIMAX(spotify_ts, order = (1, 0, 0), seasonal_order=(1, 0, 0, 12))
-            aes_model_fit = aes_model_spotify.fit()
-
-            # Turning the forecast data into a visualization (line chart)
-
-            forecast_spotify = aes_model_fit.forecast(steps = 12)
-
-            forecast_spotify_df = pd.DataFrame({
-                'Month': pd.date_range(start = spotify_ts.index[-1] + pd.offsets.MonthBegin(), periods = 12, freq = "MS"),
-                'AES': forecast_spotify
-            })
-
+            future_year = spotify_model.make_future_dataframe(periods=12, freq='ME')
+            # Generate predctions
+            spotify_forecast = spotify_model.predict(future_year)
+            last_train_date = spotify_data['ds'].max()
+            forecast_spotify_df = spotify_forecast[spotify_forecast['ds'] > last_train_date][['ds', 'yhat']].rename(columns={'ds': 'Month', 'yhat': 'AES'})
             forecast_spotify_df['AES_Text'] = forecast_spotify_df['AES'].apply(lambda x: f"${x:.4f}")
             
             fig = px.line(
@@ -664,7 +651,6 @@ else:
                               mode = 'lines+markers+text', text=forecast_spotify_df['AES_Text'], textposition='top center')
             st.plotly_chart(fig)
 
-            st.write('These forecasts are created using your streaming data. This process utilizes the SARIMAX model.')
-            
+            st.write("These forecasts are created using your streaming data. This forecast utilizes Meta's Prophet model. For details on the process, refer to the report below.")            
             st.subheader('12-Month Forecast: Apple Music')
             st.write('Work in progress.')
