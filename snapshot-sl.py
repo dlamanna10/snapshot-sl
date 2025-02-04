@@ -59,6 +59,13 @@ if 'cad' not in st.session_state:
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Upload'
 
+def load_sample_data():
+    file_path = 'sample_data/DistroKid_1734544230367.tsv'
+    raw_data = pd.read_csv(file_path, sep = "\t")
+    st.session_state['uploaded_file'] = file_path
+    st.session_state['cad'] = cleaning_process(raw_data)
+    st.success('Sample data loaded!')
+
 with st.sidebar:
     st.title("🎯 Dashboard")
     home_button = st.button("🏠 Home")
@@ -88,9 +95,12 @@ with st.sidebar:
 if st.session_state.current_page == 'Upload':
     st.title('Welcome to Snapshot!')
     st.write('Make sure Wide-Mode is enabled in the settings (top-right)!')
-    st.write('Upload your raw DistroKid data (.tsv) here!')
+    st.write('Upload your raw DistroKid data (.tsv) here or use the sample data button below!')
 
     uploaded_file = st.file_uploader("Upload your file here", type=['tsv'])
+
+    if st.button("Load Sample Data"):
+        load_sample_data()
 
     if uploaded_file is not None:
         st.session_state['uploaded_file'] = uploaded_file
