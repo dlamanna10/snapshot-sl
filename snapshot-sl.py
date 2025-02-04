@@ -652,6 +652,6 @@ else:
                               mode = 'lines+markers+text', text=forecast_spotify_df['AES_Text'], textposition='top center')
             st.plotly_chart(fig)
 
-            st.write("These forecasts are created using your streaming data. This forecast utilizes Meta's Prophet model. For details on the process, refer to the report below.")            
+            st.write("These forecasts are created using your streaming data. This forecast utilizes Meta's Prophet model.")            
             st.subheader('12-Month Forecast: Apple Music')
             st.write('Work in progress.')
