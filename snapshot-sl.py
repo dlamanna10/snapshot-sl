@@ -86,8 +86,8 @@ with st.sidebar:
         st.session_state.current_page = 'Upload'
 
 if st.session_state.current_page == 'Upload':
-    st.title('Data Upload')
-    st.write('Upload your DistroKid data here.')
+    st.title('Welcome to Snapshot!')
+    st.write('Upload your raw DistroKid data (.tsv) here!')
 
     uploaded_file = st.file_uploader("Upload your file here", type=['tsv'])
 
@@ -613,6 +613,7 @@ else:
 
 
             st.subheader('Platform AES by Month')
+            st.write('Double-click to isolate a platform. Left-click to add more for comparison.')
             fig = px.line(
                 aes_platform_m, x='Month', y='AES', color = 'Store',
                 labels={'AES':'AES', 'Month':'Month'},
